@@ -4,6 +4,8 @@ import (
 	"database/sql"
 )
 
+const registered = "registered"
+
 type ParcelStore struct {
 	db *sql.DB
 }
@@ -30,8 +32,8 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 	// реализуйте чтение строки по заданному number
 	// здесь из таблицы должна вернуться только одна строка
 	// заполните объект Parcel данными из таблицы
-	row := s.db.QueryRow("SELECT * FROM parcel WHERE number = ?", number)
 	p := Parcel{}
+	row := s.db.QueryRow("SELECT * FROM parcel WHERE number = ?", number)
 	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 	if err != nil {
 		return Parcel{}, err
@@ -48,6 +50,7 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 		return nil, err
 	}
 	defer rows.Close()
+
 	parcels := []Parcel{}
 	for rows.Next() {
 		p := Parcel{}
@@ -56,6 +59,10 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 			return nil, err
 		}
 		parcels = append(parcels, p)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 	return parcels, nil
 }
@@ -72,7 +79,7 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
 	// менять адрес можно только если значение статуса registered
-	_, err := s.db.Exec("UPDATE parcel SET address = ? WHERE number = ? AND status = 'registered'", address, number)
+	_, err := s.db.Exec("UPDATE parcel SET address = ? WHERE number = ? AND status = ?", address, number, registered)
 	if err != nil {
 		return err
 	}
@@ -82,7 +89,7 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 func (s ParcelStore) Delete(number int) error {
 	// реализуйте удаление строки из таблицы parcel
 	// удалять строку можно только если значение статуса registered
-	_, err := s.db.Exec("DELETE FROM parcel WHERE number = ? AND status = 'registered'", number)
+	_, err := s.db.Exec("DELETE FROM parcel WHERE number = ? AND status = ?", number, registered)
 	if err != nil {
 		return err
 	}
